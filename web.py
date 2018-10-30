@@ -1,21 +1,40 @@
-from flask import Flask, request
 import skimage.io
-from util import get_model
+import json
+import tensorflow as tf
+from flask import Flask, request
+from util import get_model, transform
+
+
+def after_request(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'PUT,GET,POST,DELETE'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    return response
+
 
 app = Flask(__name__)
+app.after_request(after_request)
+model = get_model()
+global graph
+graph = tf.get_default_graph()
 
 
 @app.route('/')
 def hello():
-    return 'Hello World!'
+    return 'This is a empty page.'
 
-@app.route('/detect')
+
+@app.route('/detect', methods=['POST'])
 def detect():
-    image_path = request.args.get('image_path', '', type=str)
-    image = skimage.io.imread(image_path)
-    model = get_model()
-    results = model.detect([image], verbose=1)
-    return results
+    image = request.files.get('image')
+    image = skimage.io.imread(image)
+    with graph.as_default():
+        results = model.detect([image], verbose=0)
+    boxes = results[0]['rois']
+    print(boxes[0])
+    formatted_boxes = list(map(transform, boxes))
+    return json.dumps(formatted_boxes)
+
 
 if __name__ == '__main__':
     app.run(port=40022)

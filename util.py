@@ -50,13 +50,11 @@ config = InferenceConfig()
 def get_model():
     model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
     model.load_weights(COCO_MODEL_PATH, by_name=True)
+    return model
 
 
-# Run detection
-# results = model.detect([image], verbose=1)
-
-# Visualize results
-# r = results[0]
-# visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
-#                             class_names, None)
-# print('end')
+def transform(coodinate):
+    bottom_left_y, bottom_left_x, top_right_y, top_right_x = [float(i) for i in coodinate]
+    width = abs(bottom_left_x - top_right_x)
+    height = abs(bottom_left_y - top_right_y)
+    return [bottom_left_x, bottom_left_y, width, height]
